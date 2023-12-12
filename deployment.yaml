@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: story-app
+  template:
+    metadata:
+      labels:
+        app: story-app
+    spec:
+      containers:
+        - name: story-app
+          image: hafhisgustiawan/kub-data:2
+          env:
+            - name: STORY_FOLDER
+              # value: "story"
+              valueFrom:
+                configMapKeyRef:
+                  name: data-store-env
+                  key: folder
+          volumeMounts:
+            # mountPath ini directory di dalam container yang ingin di mirroring dengan volume
+            - mountPath: /app/story
+              # name disini adalah identifier nama volume yang dibuat dibawah
+              name: story-volume
+      # volume is attach to pods, lifetime nya juga tergantung sama pods ini, ketika kita inisialisasi volume disini, semua container didalam pods ini bisa mengaksesnya
+      volumes:
+        - name: story-volume
+          # DISINI KITA GUNAKAN PERSISTANCE VOLUME YA, DIMANA DIA DETACH DARI NODE LAIN DAN BERADA DI DALAM CLUSTER, CEK host-pv.yaml dan host-pvc.yaml
+          # persistance volume is fully independent from pods
+          persistentVolumeClaim:
+            claimName: host-pvc
+
+          # emptyDir is attach to pod
+          # emptyDir ini adalah salah satu driver dari kubernetes dimana dia membuat directory kosong ketika pod dibuat, ketika pod di hapus maka volume ini juga ikutan di hapus permanen.
+          # ketika menggunakan tipe driver ini, data yang di project gak akan di copy kesini, dia akan kosong aja gitu untuk di awal ya!
+          # emptyDir ini tidak bekerja maksimal ketika kita scaling atau replicas lebih dari 1, karena ketika replica ditambahkan dia akan menjadi folder kosong lagi, sesuai nama nya emptyDir
+          # emptyDir: {}
+
+          # hostPath is attach to node worker
+          # hostPath ini seperti bind mount di docker biasa, dia mirroring folder di local machine ke folder di container
+          # local machine disini ditujukan ke worker node ya, krn pods itu berjalan di worker node, jadi bukan di local komputer kita
+          # hati2 ketika memilih type nya ini, kalo direktori nya belum ada, patikan memilih type: DirectiryOrCreate
+          # kelemahan nya ketika kita memiliki lebih dari 1 worker node ini gabisa di akses, krn ini attach ke 1 node worker aja
+          # hostPath:
+          #   # Ensure the file directory is created.
+          #   path: /var/local/aaa
+          #   type: DirectoryOrCreate
+        # - name: myfile
+        #   hostPath:
+        #     path: /var/local/aaa/1.txt
+        #     type: FileOrCreate
+# ketika mengubah image tidak perlu stop deployment, langsung : kubectl apply -f deployment.yaml

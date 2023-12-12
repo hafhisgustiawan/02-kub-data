@@ -1,0 +1,20 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: host-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  # storage class ini adalah sebuah konsep bawaan kubernetes untuk inisialisasi bagaimana cara penyajian data, untuk kasus kali ini cukup pake yang bawaan aja, yaitu standart
+  storageClassName: standart # cek di : kubectl get sc
+  accessModes:
+    - ReadWriteOnce
+    # - ReadOnlyMany
+    # - ReadWriteMany
+  hostPath:
+    # Ensure the file directory is created.
+    path: /data
+    type: DirectoryOrCreate
+# cek : kubectl get pv
+# DATA PERSISTENT VOLUME INI AKAN DISIMPAN KE SEBUAH NAMED VOLUME DOCKER BIASA (cek volume minikube) DENGAN FOLDER /data
